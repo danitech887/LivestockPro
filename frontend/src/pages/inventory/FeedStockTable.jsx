@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
-import { Wheat, Plus, AlertTriangle, CheckCircle2, ArrowDownCircle, RefreshCw } from 'lucide-react';
+import { Wheat, Plus, AlertTriangle, CheckCircle2, ArrowDownCircle, RefreshCw, Utensils } from 'lucide-react';
 import { useFarm } from '../../context/FarmContext';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
+import { InitialiseFeedingModal } from './InitialiseFeedingModal';
 import { formatCurrency, formatDate } from '../../utils/formatters';
 
 export const FeedStockTable = () => {
   const { feedStock, addFeedStock, updateFeedStock } = useFarm();
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [restockModal, setRestockModal] = useState({ isOpen: false, item: null, addQty: '500' });
+  const [feedingModal, setFeedingModal] = useState({ isOpen: false, item: null });
 
   const [formData, setFormData] = useState({
     name: '',
@@ -79,18 +81,27 @@ export const FeedStockTable = () => {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h3 className="font-bold text-slate-900 text-base">Barn Feed & Ration Inventory</h3>
           <p className="text-xs text-slate-500">Stockpile tracking for concentrates, dry forage bales, pit silage, and minerals</p>
         </div>
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => setAddModalOpen(true)}
-        >
-          Add Feed Item
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="dairy"
+            icon={Utensils}
+            onClick={() => setFeedingModal({ isOpen: true, item: feedStock[0] })}
+          >
+            Initialise Feeding
+          </Button>
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={() => setAddModalOpen(true)}
+          >
+            Add Feed Item
+          </Button>
+        </div>
       </div>
 
       {/* Add Item Drawer */}
@@ -200,7 +211,7 @@ export const FeedStockTable = () => {
       )}
 
       {/* Stock Levels Table */}
-      <Card title="Current Stock Levels & Storage Depots" subtitle="Real-time volume available">
+      <Card title="Current Stock Levels & Storage Depots" subtitle="Real-time volume available with direct feeding dispatch">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -212,7 +223,7 @@ export const FeedStockTable = () => {
                 <th className="py-3 px-3">Cost / Unit</th>
                 <th className="py-3 px-3">Storage Depot</th>
                 <th className="py-3 px-3">Status</th>
-                <th className="py-3 px-3 text-right">Action</th>
+                <th className="py-3 px-3 text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
@@ -236,14 +247,25 @@ export const FeedStockTable = () => {
                       </Badge>
                     </td>
                     <td className="py-3 px-3 text-right">
-                      <Button
-                        size="sm"
-                        variant="secondary"
-                        onClick={() => setRestockModal({ isOpen: true, item, addQty: '500' })}
-                        className="py-1 px-2.5 text-xs font-semibold"
-                      >
-                        Restock
-                      </Button>
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          icon={Utensils}
+                          onClick={() => setFeedingModal({ isOpen: true, item })}
+                          className="py-1 px-2.5 text-xs font-bold bg-farm-600 hover:bg-farm-700 text-white shadow-sm"
+                        >
+                          Initialise Feeding
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => setRestockModal({ isOpen: true, item, addQty: '500' })}
+                          className="py-1 px-2.5 text-xs font-semibold"
+                        >
+                          Restock
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -252,6 +274,13 @@ export const FeedStockTable = () => {
           </table>
         </div>
       </Card>
+
+      {/* Dedicated Initialise Feeding Modal with Full Specifications */}
+      <InitialiseFeedingModal
+        isOpen={feedingModal.isOpen}
+        feedItem={feedingModal.item}
+        onClose={() => setFeedingModal({ isOpen: false, item: null })}
+      />
     </div>
   );
 };

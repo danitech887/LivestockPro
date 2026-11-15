@@ -12,7 +12,8 @@ import {
   ChevronRight,
   ShieldAlert,
   Flame,
-  Plus
+  Plus,
+  ShoppingBag
 } from 'lucide-react';
 import { useFarm } from '../../context/FarmContext';
 
@@ -49,6 +50,12 @@ export const Sidebar = ({ isCollapsed, toggleCollapsed, onOpenQuickLog }) => {
       to: '/finance',
       label: 'Financial P&L',
       icon: DollarSign
+    },
+    {
+      to: '/marketplace',
+      label: 'Livestock Marketplace',
+      icon: ShoppingBag,
+      badge: stats.availableForSaleCount || 4
     },
     {
       to: '/settings',

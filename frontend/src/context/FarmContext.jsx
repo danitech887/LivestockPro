@@ -137,6 +137,27 @@ export const FarmProvider = ({ children }) => {
     return created;
   };
 
+  const sellAnimal = (saleDetails) => {
+    const res = api.sellAnimal(saleDetails);
+    if (res.success) {
+      setAnimals(api.getAnimals());
+      setSales(api.getSales());
+      setActivities(api.getActivity());
+      queueAction({ type: 'SELL_ANIMAL', payload: saleDetails });
+    }
+    return res;
+  };
+
+  const toggleAnimalSaleAvailability = (id, isAvailable, askingPrice) => {
+    const updated = api.toggleAnimalSaleAvailability(id, isAvailable, askingPrice);
+    if (updated) {
+      setAnimals(api.getAnimals());
+      setActivities(api.getActivity());
+      queueAction({ type: 'TOGGLE_SALE_AVAILABILITY', id, isAvailable, askingPrice });
+    }
+    return updated;
+  };
+
   const resetAllData = () => {
     api.resetDemoData();
     refreshData();
@@ -193,6 +214,14 @@ export const FarmProvider = ({ children }) => {
     // Low stock alerts
     const lowStockCount = feedStock.filter(f => f.currentStock <= f.reorderThreshold).length;
 
+    // Animals available for sale
+    const availableForSaleCount = animals.filter(a => a.status === 'active' && a.isAvailableForSale).length;
+
+    // Total accumulated profit from all livestock sales
+    const livestockSales = sales.filter(s => s.type === 'Livestock Sale' || s.animalTag || s.animalId);
+    const totalLivestockSalesProfit = livestockSales.reduce((sum, s) => sum + (s.profit !== undefined ? s.profit : (s.amount * 0.25)), 0);
+    const soldLivestockCount = animals.filter(a => a.status === 'sold').length;
+
     return {
       totalActiveCount,
       dairyCount: dairyHerd.length,
@@ -203,7 +232,10 @@ export const FarmProvider = ({ children }) => {
       totalExpenses: totalExp,
       netIncomeMTD,
       withdrawalCount,
-      lowStockCount
+      lowStockCount,
+      availableForSaleCount,
+      totalLivestockSalesProfit,
+      soldLivestockCount
     };
   }, [animals, sales, expenses, feedStock, sectorFilter]);
 
@@ -237,6 +269,8 @@ export const FarmProvider = ({ children }) => {
         addFeedConsumption,
         addSale,
         addExpense,
+        sellAnimal,
+        toggleAnimalSaleAvailability,
         resetAllData,
         refreshData
       }}

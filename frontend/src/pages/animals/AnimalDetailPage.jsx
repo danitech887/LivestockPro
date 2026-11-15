@@ -16,13 +16,17 @@ import {
   Tag,
   CheckCircle2,
   AlertTriangle,
-  FileText
+  FileText,
+  ShoppingBag,
+  Printer
 } from 'lucide-react';
 import { useFarm } from '../../context/FarmContext';
 import { Badge } from '../../components/common/Badge';
 import { Button } from '../../components/common/Button';
 import { Card } from '../../components/common/Card';
 import { QuickLogModal } from '../../components/common/QuickLogModal';
+import { SellAnimalModal } from './SellAnimalModal';
+import { AnimalPrintDossier } from '../../components/common/AnimalPrintDossier';
 import { LactationCurveChart } from '../../components/charts/LactationCurveChart';
 import { WeightProgressionChart } from '../../components/charts/WeightProgressionChart';
 import { calculateAge, formatWeight, formatCurrency, formatDate } from '../../utils/formatters';
@@ -30,10 +34,12 @@ import { calculateAge, formatWeight, formatCurrency, formatDate } from '../../ut
 export const AnimalDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { animals, milkRecords, weightLogs, treatments, sales, expenses } = useFarm();
+  const { animals, milkRecords, weightLogs, treatments, sales, expenses, toggleAnimalSaleAvailability } = useFarm();
 
   const [activeTab, setActiveTab] = useState('production'); // 'lineage', 'production', 'health', 'financial'
   const [quickLogModal, setQuickLogModal] = useState({ isOpen: false, type: 'milk' });
+  const [sellModalOpen, setSellModalOpen] = useState(false);
+  const [printModalOpen, setPrintModalOpen] = useState(false);
 
   // Find animal by ID or tagId
   const animal = animals.find(a => a.id === id || a.tagId === id) || animals[0];
@@ -123,8 +129,31 @@ export const AnimalDetailPage = () => {
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2">
-            {animal.sector === 'dairy' && (
+          <div className="flex flex-wrap items-center gap-2">
+            {animal.status === 'active' ? (
+              <>
+                <Button
+                  variant="primary"
+                  icon={ShoppingBag}
+                  onClick={() => setSellModalOpen(true)}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  Sell Livestock
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => toggleAnimalSaleAvailability(animal.id, !animal.isAvailableForSale)}
+                >
+                  {animal.isAvailableForSale ? 'Unlist from Sale' : 'Mark Available for Sale'}
+                </Button>
+              </>
+            ) : (
+              <span className="px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-xs">
+                Sold: {formatCurrency(animal.soldPrice || 0)} (+{formatCurrency(animal.soldProfit || 0)} profit)
+              </span>
+            )}
+
+            {animal.sector === 'dairy' && animal.status === 'active' && (
               <Button
                 variant="dairy"
                 icon={Milk}
@@ -133,7 +162,7 @@ export const AnimalDetailPage = () => {
                 Log Milk
               </Button>
             )}
-            {animal.sector === 'beef' && (
+            {animal.sector === 'beef' && animal.status === 'active' && (
               <Button
                 variant="beef"
                 icon={Scale}
@@ -142,6 +171,13 @@ export const AnimalDetailPage = () => {
                 Record Weight
               </Button>
             )}
+            <Button
+              variant="secondary"
+              icon={Printer}
+              onClick={() => setPrintModalOpen(true)}
+            >
+              Print Passport (PDF)
+            </Button>
             <Button
               variant="secondary"
               icon={Stethoscope}
@@ -519,6 +555,16 @@ export const AnimalDetailPage = () => {
                     <td className="py-2.5 px-3 text-emerald-700 font-bold">Revenue</td>
                     <td className="py-2.5 px-3 text-right font-bold text-emerald-700">{formatCurrency(totalRevenue)}</td>
                   </tr>
+                  {animal.status === 'sold' && (
+                    <tr className="hover:bg-emerald-100/60 bg-emerald-100/40">
+                      <td className="py-2.5 px-3 font-black text-emerald-900">Direct Livestock Sale (Transfer)</td>
+                      <td className="py-2.5 px-3 text-emerald-950">Sold to {animal.soldBuyer || 'Buyer'} on {formatDate(animal.soldDate)}</td>
+                      <td className="py-2.5 px-3 text-emerald-800 font-bold">Commercial Asset Sale</td>
+                      <td className="py-2.5 px-3 text-right font-black text-emerald-800">
+                        {formatCurrency(animal.soldPrice || 0)} <span className="text-[10px] text-emerald-700 block">(+{formatCurrency(animal.soldProfit || 0)} profit)</span>
+                      </td>
+                    </tr>
+                  )}
                 </tbody>
               </table>
             </div>
@@ -532,6 +578,20 @@ export const AnimalDetailPage = () => {
         defaultType={quickLogModal.type}
         preselectedAnimal={animal}
         onClose={() => setQuickLogModal({ isOpen: false, type: 'milk' })}
+      />
+
+      {/* Commercial Sell Animal Modal */}
+      <SellAnimalModal
+        isOpen={sellModalOpen}
+        selectedAnimalId={animal.id}
+        onClose={() => setSellModalOpen(false)}
+      />
+
+      {/* Printable Animal Passport & Health PDF Dossier */}
+      <AnimalPrintDossier
+        animal={animal}
+        isOpen={printModalOpen}
+        onClose={() => setPrintModalOpen(false)}
       />
     </div>
   );

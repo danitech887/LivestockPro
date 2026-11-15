@@ -83,6 +83,101 @@ export const api = {
     save(STORAGE_KEYS.ANIMALS, updated);
     return true;
   },
+  toggleAnimalSaleAvailability: (id, isAvailable, askingPrice) => {
+    const current = load(STORAGE_KEYS.ANIMALS, initialAnimals);
+    const target = current.find(a => a.id === id);
+    if (!target) return null;
+
+    const updates = {
+      isAvailableForSale: Boolean(isAvailable),
+      ...(askingPrice !== undefined ? { askingPrice: Number(askingPrice) } : {})
+    };
+
+    const updated = current.map(a => a.id === id ? { ...a, ...updates } : a);
+    save(STORAGE_KEYS.ANIMALS, updated);
+
+    api.addActivity({
+      type: 'sale',
+      title: isAvailable ? 'Livestock Listed for Sale' : 'Livestock Unlisted from Sale',
+      description: `Tag ${target.tagId} (${target.name || target.breed}) is ${isAvailable ? `now available for sale (Asking: $${updates.askingPrice || target.askingPrice || 0})` : 'no longer available for sale'}.`,
+      sector: target.sector
+    });
+
+    return updated.find(a => a.id === id);
+  },
+  sellAnimal: ({ animalId, buyer, negotiatedPrice, discount = 0, notes = '', date }) => {
+    const current = load(STORAGE_KEYS.ANIMALS, initialAnimals);
+    const target = current.find(a => a.id === animalId);
+    if (!target) {
+      return { success: false, error: 'Animal record not found.' };
+    }
+
+    // Health condition & withdrawal check
+    if (target.healthStatus !== 'healthy' || target.withdrawalActive) {
+      return {
+        success: false,
+        error: `Cannot sell ${target.tagId}: Animal is currently under medical treatment or mandatory withdrawal period. Sale prohibited until cleared.`
+      };
+    }
+
+    const grossPrice = Number(negotiatedPrice) || 0;
+    const discountAmount = Math.max(0, Number(discount) || 0);
+    const finalPrice = Math.max(0, grossPrice - discountAmount);
+    const acquisitionCost = Number(target.costsIncurred || 0);
+    const netProfit = finalPrice - acquisitionCost;
+    const saleDate = date || new Date().toISOString().split('T')[0];
+
+    const updatedAnimal = {
+      ...target,
+      status: 'sold',
+      isAvailableForSale: false,
+      soldDate: saleDate,
+      soldPrice: finalPrice,
+      soldBuyer: buyer,
+      soldProfit: netProfit,
+      revenueGenerated: (Number(target.revenueGenerated) || 0) + finalPrice,
+      notes: notes ? `${target.notes ? target.notes + ' | ' : ''}Sold: ${notes}` : target.notes
+    };
+
+    const updatedAnimals = current.map(a => a.id === animalId ? updatedAnimal : a);
+    save(STORAGE_KEYS.ANIMALS, updatedAnimals);
+
+    // Add transaction to Sales ledger
+    const currentSales = load(STORAGE_KEYS.SALES, initialSales);
+    const newSale = {
+      id: `s_${Date.now()}`,
+      date: saleDate,
+      type: 'Livestock Sale',
+      description: `Direct Livestock Sale: Tag ${target.tagId} (${target.name || target.breed})`,
+      buyer: buyer || 'Private Buyer',
+      amount: finalPrice,
+      sector: target.sector,
+      status: 'paid',
+      animalId: target.id,
+      animalTag: target.tagId,
+      costsIncurred: acquisitionCost,
+      negotiatedPrice: grossPrice,
+      discount: discountAmount,
+      profit: netProfit,
+      notes
+    };
+    save(STORAGE_KEYS.SALES, [newSale, ...currentSales]);
+
+    // Add activity log
+    api.addActivity({
+      type: 'sale',
+      title: `Livestock Sold: ${target.tagId} ($${finalPrice.toFixed(2)})`,
+      description: `Sold to ${buyer} for $${finalPrice.toFixed(2)}. Incurred cost: $${acquisitionCost.toFixed(2)} | Net Profit: $${netProfit.toFixed(2)}${discountAmount > 0 ? ` (Includes $${discountAmount.toFixed(2)} concession discount)` : ''}.`,
+      sector: target.sector
+    });
+
+    return {
+      success: true,
+      animal: updatedAnimal,
+      sale: newSale,
+      profit: netProfit
+    };
+  },
 
   // Milk Production
   getMilkRecords: () => load(STORAGE_KEYS.MILK, initialMilkRecords),

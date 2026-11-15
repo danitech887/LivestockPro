@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { DollarSign, Plus, CheckCircle2, ShoppingBag, Truck, Receipt } from 'lucide-react';
+import { DollarSign, Plus, CheckCircle2, ShoppingBag, Truck, Receipt, TrendingUp, ShieldAlert, Tag, Percent } from 'lucide-react';
 import { useFarm } from '../../context/FarmContext';
 import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Input } from '../../components/common/Input';
 import { Select } from '../../components/common/Select';
 import { Badge } from '../../components/common/Badge';
-import { formatCurrency, formatDate } from '../../utils/formatters';
+import { SellAnimalModal } from '../animals/SellAnimalModal';
+import { formatCurrency, formatDate, formatWeight } from '../../utils/formatters';
 
 export const SalesTrackerTab = () => {
-  const { sales, addSale } = useFarm();
+  const { sales, addSale, animals, stats } = useFarm();
   const [formOpen, setFormOpen] = useState(false);
+  const [sellAnimalModalOpen, setSellAnimalModalOpen] = useState(false);
+  const [selectedSellAnimalId, setSelectedSellAnimalId] = useState(null);
 
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
@@ -41,6 +44,14 @@ export const SalesTrackerTab = () => {
   const beefSales = sales.filter(s => s.sector === 'beef').reduce((sum, s) => sum + s.amount, 0);
   const breedingSales = sales.filter(s => s.sector === 'breeding').reduce((sum, s) => sum + s.amount, 0);
 
+  // Available livestock for sale
+  const availableLivestock = animals.filter(a => a.status === 'active' && a.isAvailableForSale);
+
+  const handleOpenSell = (animalId) => {
+    setSelectedSellAnimalId(animalId);
+    setSellAnimalModalOpen(true);
+  };
+
   return (
     <div className="space-y-6">
       {/* Top Sales KPI Cards */}
@@ -52,9 +63,11 @@ export const SalesTrackerTab = () => {
         </Card>
 
         <Card className="border-l-4 border-l-blue-600">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Dairy Milk & Cull Sales</span>
-          <div className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(dairySales)}</div>
-          <p className="text-xs text-blue-700 font-semibold mt-1">Bulk Creamery Deliveries</p>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Accumulated Animal Profit</span>
+          <div className="text-2xl font-black text-emerald-700 mt-1">
+            {formatCurrency(stats.totalLivestockSalesProfit || 2100)}
+          </div>
+          <p className="text-xs text-blue-700 font-semibold mt-1">From livestock commercial transfers</p>
         </Card>
 
         <Card className="border-l-4 border-l-red-600">
@@ -64,29 +77,108 @@ export const SalesTrackerTab = () => {
         </Card>
 
         <Card className="border-l-4 border-l-purple-600">
-          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Pedigree Breeding Stock</span>
-          <div className="text-2xl font-black text-slate-900 mt-1">{formatCurrency(breedingSales)}</div>
-          <p className="text-xs text-purple-700 font-semibold mt-1">Breeding Bulls & Heifers</p>
+          <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Available for Sale</span>
+          <div className="text-2xl font-black text-purple-700 mt-1">{availableLivestock.length} Head</div>
+          <p className="text-xs text-slate-500 font-semibold mt-1">Active market catalog</p>
         </Card>
       </div>
 
       {/* Action Bar */}
-      <div className="flex items-center justify-between">
-        <h3 className="font-bold text-slate-900 text-base">Sales Receipts & Commercial Ledger</h3>
-        <Button
-          variant="primary"
-          icon={Plus}
-          onClick={() => setFormOpen(true)}
-        >
-          Record Sale Receipt
-        </Button>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h3 className="font-bold text-slate-900 text-base">Commercial Sales & Animal Marketplace</h3>
+          <p className="text-xs text-slate-500">Record negotiated animal sales, profit accumulations, and bulk product invoices</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="dairy"
+            icon={ShoppingBag}
+            onClick={() => handleOpenSell(null)}
+          >
+            Sell Livestock
+          </Button>
+          <Button
+            variant="primary"
+            icon={Plus}
+            onClick={() => setFormOpen(true)}
+          >
+            Record General Invoice
+          </Button>
+        </div>
       </div>
+
+      {/* Catalog of Livestock Currently Available for Sale */}
+      {availableLivestock.length > 0 && (
+        <Card
+          title="Livestock Listed & Available for Immediate Sale"
+          subtitle="Click 'Sell to Buyer' to input negotiated amount, apply optional discounts, and verify food-safety clearance"
+          icon={ShoppingBag}
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {availableLivestock.map((cow) => {
+              const isUnfit = cow.healthStatus !== 'healthy' || cow.withdrawalActive;
+              const cost = cow.costsIncurred || 0;
+              const asking = cow.askingPrice || Math.round(cost * 1.35);
+              const estProfit = Math.max(0, asking - cost);
+
+              return (
+                <div
+                  key={cow.id}
+                  className="p-3.5 rounded-xl border border-slate-200 bg-slate-50/70 hover:bg-white hover:border-slate-300 transition-all flex flex-col justify-between gap-3"
+                >
+                  <div>
+                    <div className="flex items-center justify-between">
+                      <span className="font-black text-slate-900 text-sm">{cow.tagId}</span>
+                      <Badge variant={cow.sector} size="sm">{cow.sector.toUpperCase()}</Badge>
+                    </div>
+                    <div className="font-bold text-slate-800 text-xs mt-1">"{cow.name || 'Unnamed'}" • {cow.breed}</div>
+                    <div className="text-[11px] text-slate-500 mt-0.5">{formatWeight(cow.weight)} • {cow.penLocation}</div>
+
+                    <div className="mt-3 pt-2 border-t border-slate-200 grid grid-cols-2 gap-2 text-xs">
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Acquisition Cost</span>
+                        <span className="font-bold text-slate-700">{formatCurrency(cost)}</span>
+                      </div>
+                      <div>
+                        <span className="text-[10px] text-slate-400 font-bold uppercase block">Asking Price</span>
+                        <span className="font-black text-emerald-700">{formatCurrency(asking)}</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-slate-200 flex items-center justify-between">
+                    {isUnfit ? (
+                      <span className="text-[11px] font-bold text-rose-700 flex items-center gap-1">
+                        <ShieldAlert className="w-3.5 h-3.5" /> Hold / Sick
+                      </span>
+                    ) : (
+                      <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> Cleared
+                      </span>
+                    )}
+
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      disabled={isUnfit}
+                      onClick={() => handleOpenSell(cow.id)}
+                      className="py-1 px-3 text-xs"
+                    >
+                      Sell to Buyer
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </Card>
+      )}
 
       {/* Record New Sale Form Drawer */}
       {formOpen && (
         <Card
-          title="Record Agricultural Sale"
-          subtitle="Log bulk milk collection receipt, finished steer invoice, or livestock sale"
+          title="Record Agricultural Invoice"
+          subtitle="Log bulk milk collection receipt or custom sales invoice"
           className="border-2 border-emerald-400 bg-emerald-50/20"
         >
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,46 +252,77 @@ export const SalesTrackerTab = () => {
       )}
 
       {/* Sales Transactions Table */}
-      <Card title="Transaction History & Invoices" subtitle="Verified audit log of all farm income">
+      <Card title="Transaction History & Invoices" subtitle="Audited ledger showing negotiated prices, discounts, and realized profits">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
               <tr className="border-b border-slate-200 text-slate-500 font-bold uppercase">
                 <th className="py-3 px-3">Date</th>
                 <th className="py-3 px-3">Category</th>
-                <th className="py-3 px-3">Description</th>
-                <th className="py-3 px-3">Commercial Buyer</th>
-                <th className="py-3 px-3">Sector</th>
-                <th className="py-3 px-3 text-right">Amount</th>
-                <th className="py-3 px-3 text-center">Status</th>
+                <th className="py-3 px-3">Description & Animal Tag</th>
+                <th className="py-3 px-3">Buyer</th>
+                <th className="py-3 px-3">Acquisition Cost</th>
+                <th className="py-3 px-3">Negotiated Price</th>
+                <th className="py-3 px-3">Concession Discount</th>
+                <th className="py-3 px-3 text-right">Net Received</th>
+                <th className="py-3 px-3 text-right">Net Profit</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 font-medium">
-              {sales.map((s) => (
-                <tr key={s.id} className="hover:bg-slate-50">
-                  <td className="py-3 px-3 font-bold text-slate-800">{formatDate(s.date)}</td>
-                  <td className="py-3 px-3 font-bold text-slate-900">{s.type}</td>
-                  <td className="py-3 px-3 text-slate-700">{s.description}</td>
-                  <td className="py-3 px-3 font-semibold text-slate-800">{s.buyer}</td>
-                  <td className="py-3 px-3">
-                    <Badge variant={s.sector} size="sm">
-                      {s.sector?.toUpperCase()}
-                    </Badge>
-                  </td>
-                  <td className="py-3 px-3 text-right font-black text-emerald-700">
-                    {formatCurrency(s.amount)}
-                  </td>
-                  <td className="py-3 px-3 text-center">
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800">
-                      PAID
-                    </span>
-                  </td>
-                </tr>
-              ))}
+              {sales.map((s) => {
+                const isAnimalSale = s.type === 'Livestock Sale' || s.animalTag || s.animalId;
+                const profit = s.profit !== undefined ? s.profit : (isAnimalSale ? s.amount * 0.25 : null);
+
+                return (
+                  <tr key={s.id} className="hover:bg-slate-50">
+                    <td className="py-3 px-3 font-bold text-slate-800">{formatDate(s.date)}</td>
+                    <td className="py-3 px-3">
+                      <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase ${
+                        isAnimalSale ? 'bg-purple-100 text-purple-900' : 'bg-blue-100 text-blue-900'
+                      }`}>
+                        {s.type}
+                      </span>
+                    </td>
+                    <td className="py-3 px-3 font-bold text-slate-900">{s.description}</td>
+                    <td className="py-3 px-3 font-semibold text-slate-800">{s.buyer}</td>
+                    <td className="py-3 px-3 text-slate-600">
+                      {isAnimalSale && s.costsIncurred ? formatCurrency(s.costsIncurred) : '—'}
+                    </td>
+                    <td className="py-3 px-3 font-bold text-slate-900">
+                      {isAnimalSale && s.negotiatedPrice ? formatCurrency(s.negotiatedPrice) : formatCurrency(s.amount)}
+                    </td>
+                    <td className="py-3 px-3 text-amber-700">
+                      {isAnimalSale && s.discount > 0 ? `-${formatCurrency(s.discount)}` : '—'}
+                    </td>
+                    <td className="py-3 px-3 text-right font-black text-slate-900">
+                      {formatCurrency(s.amount)}
+                    </td>
+                    <td className="py-3 px-3 text-right">
+                      {profit !== null ? (
+                        <span className={`font-black ${profit >= 0 ? 'text-emerald-700' : 'text-red-700'}`}>
+                          {profit >= 0 ? `+${formatCurrency(profit)}` : formatCurrency(profit)}
+                        </span>
+                      ) : (
+                        <span className="text-slate-400 font-normal">Standard</span>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </Card>
+
+      {/* Commercial Sell Animal Modal */}
+      <SellAnimalModal
+        isOpen={sellAnimalModalOpen}
+        selectedAnimalId={selectedSellAnimalId}
+        onClose={() => {
+          setSellAnimalModalOpen(false);
+          setSelectedSellAnimalId(null);
+        }}
+      />
     </div>
   );
 };

@@ -20,7 +20,9 @@ export const initialAnimals = [
     penLocation: 'Barn 1 - Pen A',
     notes: 'High producer, calm temperament.',
     costsIncurred: 1420.00,
-    revenueGenerated: 4890.00
+    revenueGenerated: 4890.00,
+    isAvailableForSale: false,
+    askingPrice: 2800.00
   },
   {
     id: 'a2',
@@ -44,7 +46,9 @@ export const initialAnimals = [
     penLocation: 'Barn 1 - Pen B',
     notes: 'Treated for mild mastitis on left rear quarter. Under Penicillin withdrawal.',
     costsIncurred: 950.00,
-    revenueGenerated: 2750.00
+    revenueGenerated: 2750.00,
+    isAvailableForSale: false,
+    askingPrice: 1900.00
   },
   {
     id: 'a3',
@@ -69,7 +73,9 @@ export const initialAnimals = [
     targetSlaughterWeight: 620,
     notes: 'Rapid weight gain, feed conversion above average.',
     costsIncurred: 880.00,
-    revenueGenerated: 0
+    revenueGenerated: 0,
+    isAvailableForSale: true,
+    askingPrice: 2150.00
   },
   {
     id: 'a4',
@@ -94,7 +100,9 @@ export const initialAnimals = [
     targetSlaughterWeight: 630,
     notes: 'Robust bone structure, prime grade beef candidate.',
     costsIncurred: 820.00,
-    revenueGenerated: 0
+    revenueGenerated: 0,
+    isAvailableForSale: true,
+    askingPrice: 2050.00
   },
   {
     id: 'a5',
@@ -117,7 +125,9 @@ export const initialAnimals = [
     penLocation: 'Barn 2 - Pen C',
     notes: 'Due for dry-off in 4 weeks.',
     costsIncurred: 1680.00,
-    revenueGenerated: 5820.00
+    revenueGenerated: 5820.00,
+    isAvailableForSale: false,
+    askingPrice: 2400.00
   },
   {
     id: 'a6',
@@ -140,7 +150,9 @@ export const initialAnimals = [
     penLocation: 'Bull Pen 1',
     notes: 'Senior herd sire. Excellent maternal traits.',
     costsIncurred: 2200.00,
-    revenueGenerated: 4500.00
+    revenueGenerated: 4500.00,
+    isAvailableForSale: true,
+    askingPrice: 4200.00
   },
   {
     id: 'a7',
@@ -163,7 +175,9 @@ export const initialAnimals = [
     penLocation: 'Barn 1 - Pen B',
     notes: 'A2 protein milk profile tested.',
     costsIncurred: 790.00,
-    revenueGenerated: 2420.00
+    revenueGenerated: 2420.00,
+    isAvailableForSale: false,
+    askingPrice: 1850.00
   },
   {
     id: 'a8',
@@ -188,7 +202,9 @@ export const initialAnimals = [
     targetSlaughterWeight: 610,
     notes: 'Docile, ready for market assessment next month.',
     costsIncurred: 910.00,
-    revenueGenerated: 0
+    revenueGenerated: 0,
+    isAvailableForSale: true,
+    askingPrice: 2200.00
   },
   {
     id: 'a9',
@@ -210,8 +226,13 @@ export const initialAnimals = [
     withdrawalDaysLeft: 0,
     penLocation: 'Archived',
     notes: 'Sold as breeding cow to Green Valley Farm.',
-    costsIncurred: 2400.00,
-    revenueGenerated: 6200.00
+    costsIncurred: 900.00,
+    revenueGenerated: 1250.00,
+    isAvailableForSale: false,
+    soldPrice: 1250.00,
+    soldProfit: 350.00,
+    soldBuyer: 'Heritage Meats Co.',
+    soldDate: '2026-11-05'
   }
 ];
 
@@ -430,10 +451,10 @@ export const initialFeedConsumption = [
 
 export const initialSales = [
   { id: 's1', date: '2026-11-12', type: 'Milk Batch Sale', description: 'Weekly Bulk Milk Supply (1,850 L)', buyer: 'Valley Fresh Creameries', amount: 1572.50, sector: 'dairy', status: 'paid' },
-  { id: 's2', date: '2026-11-05', type: 'Livestock Sale', description: 'Culled Dairy Cow (LP-099)', buyer: 'Heritage Meats Co.', amount: 1250.00, sector: 'dairy', status: 'paid' },
+  { id: 's2', date: '2026-11-05', type: 'Livestock Sale', description: 'Culled Dairy Cow (LP-099)', buyer: 'Heritage Meats Co.', amount: 1250.00, sector: 'dairy', status: 'paid', animalTag: 'LP-099', costsIncurred: 900.00, negotiatedPrice: 1300.00, discount: 50.00, profit: 350.00 },
   { id: 's3', date: '2026-10-28', type: 'Milk Batch Sale', description: 'Weekly Bulk Milk Supply (1,920 L)', buyer: 'Valley Fresh Creameries', amount: 1632.00, sector: 'dairy', status: 'paid' },
-  { id: 's4', date: '2026-10-20', type: 'Livestock Sale', description: 'Prime Finished Steer (LP-190)', buyer: 'Summit Prime Steaks', amount: 1850.00, sector: 'beef', status: 'paid' },
-  { id: 's5', date: '2026-10-15', type: 'Breeding Stock', description: 'Pedigree Bull Calf (LP-S09)', buyer: 'Oakridge Ranch', amount: 2200.00, sector: 'breeding', status: 'paid' },
+  { id: 's4', date: '2026-10-20', type: 'Livestock Sale', description: 'Prime Finished Steer (LP-190)', buyer: 'Summit Prime Steaks', amount: 1850.00, sector: 'beef', status: 'paid', animalTag: 'LP-190', costsIncurred: 1100.00, negotiatedPrice: 1900.00, discount: 50.00, profit: 750.00 },
+  { id: 's5', date: '2026-10-15', type: 'Livestock Sale', description: 'Pedigree Bull Calf (LP-S09)', buyer: 'Oakridge Ranch', amount: 2200.00, sector: 'breeding', status: 'paid', animalTag: 'LP-S09', costsIncurred: 1200.00, negotiatedPrice: 2200.00, discount: 0.00, profit: 1000.00 },
 ];
 
 export const initialExpenses = [

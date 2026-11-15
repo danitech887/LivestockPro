@@ -13,6 +13,7 @@ import { ProductionOverviewPage } from './pages/production/ProductionOverviewPag
 import { HealthPage } from './pages/health/HealthPage';
 import { InventoryPage } from './pages/inventory/InventoryPage';
 import { FinancePage } from './pages/finance/FinancePage';
+import { MarketplacePage } from './pages/marketplace/MarketplacePage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 
 const queryClient = new QueryClient({
@@ -40,6 +41,7 @@ export const App = () => {
                   <Route path="health" element={<HealthPage />} />
                   <Route path="inventory" element={<InventoryPage />} />
                   <Route path="finance" element={<FinancePage />} />
+                  <Route path="marketplace" element={<MarketplacePage />} />
                   <Route path="settings" element={<SettingsPage />} />
                   <Route path="*" element={<Navigate to="/" replace />} />
                 </Route>
